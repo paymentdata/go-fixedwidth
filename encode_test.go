@@ -70,6 +70,45 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
+func TestMarshal_format(t *testing.T) {
+	t.Run("right align", func(t *testing.T) {
+		H := struct {
+			F1 int `fixed:"1,5,right,0"`
+		}{
+			F1: 5,
+		}
+
+		v, err := Marshal(H)
+		if err != nil {
+			t.Errorf("Marshal() unexpected error: %v", err)
+		}
+
+		want := `00005`
+		if string(v) != want {
+			t.Errorf("Marshal() expected %s, have %s", want, v)
+		}
+	})
+
+	t.Run("left align", func(t *testing.T) {
+		H := struct {
+			F1 int `fixed:"1,5,left,0"`
+		}{
+			F1: 5,
+		}
+
+		v, err := Marshal(H)
+		if err != nil {
+			t.Errorf("Marshal() unexpected error: %v", err)
+		}
+
+		want := `50000`
+		if string(v) != want {
+			t.Errorf("Marshal() expected %s, have %s", want, v)
+		}
+	})
+
+}
+
 func TestNewValueEncoder(t *testing.T) {
 	for _, tt := range []struct {
 		name      string

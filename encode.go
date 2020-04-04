@@ -156,6 +156,31 @@ func newValueEncoder(t reflect.Type) valueEncoder {
 	return unknownTypeEncoder(t)
 }
 
+func (ve valueEncoder) Write(v reflect.Value, dst []byte, format Format) error {
+	value, err := ve(v)
+	if err != nil {
+		return err
+	}
+
+	if len(value) < len(dst) {
+		switch format.Alignment {
+		case Right:
+			padding := bytes.Repeat([]byte{format.PadChar}, len(dst)-len(value))
+			copy(dst, padding)
+			copy(dst[len(padding):], value)
+			return nil
+		case Left:
+			padding := bytes.Repeat([]byte{format.PadChar}, len(dst)-len(value))
+			copy(dst, value)
+			copy(dst[len(value):], padding)
+			return nil
+		}
+	}
+
+	copy(dst, value)
+	return nil
+}
+
 func structEncoder(v reflect.Value) ([]byte, error) {
 	ss := cachedStructSpec(v.Type())
 	dst := bytes.Repeat([]byte(" "), ss.ll)
@@ -165,12 +190,12 @@ func structEncoder(v reflect.Value) ([]byte, error) {
 			continue
 		}
 
-		val, err := spec.encoder(v.Field(i))
+		err := spec.encoder.Write(v.Field(i), dst[spec.startPos-1:spec.endPos:spec.endPos], spec.format)
 		if err != nil {
 			return nil, err
 		}
-		copy(dst[spec.startPos-1:spec.endPos:spec.endPos], val)
 	}
+
 	return dst, nil
 }
 
